@@ -1,15 +1,18 @@
-import { Button, VerticalBox, ProgressIndicator, LineEdit } from "std-widgets.slint";
+import { Button, VerticalBox, ProgressIndicator, LineEdit, CheckBox, HorizontalBox } from "std-widgets.slint";
 
 export component AppWindow inherits Window {
-    title: "Rust EPUB and HTML Transformer";
+    title: "Rust EPUB Transformer v1.1";
     preferred-width: 500px;
-    preferred-height: 300px;
+    preferred-height: 350px;
 
-    // These allow Rust to talk to the GUI
     in-out property <string> epub-path: "No file selected";
     in-out property <string> save-path: "Default (Same as source)";
     in-out property <float> progress: 0.0;
     in-out property <bool> is-busy: false;
+    
+    // v1.1 Selection Properties
+    in-out property <bool> export-pdf: true;
+    in-out property <bool> export-html: true;
 
     callback open-epub-clicked();
     callback select-save-clicked();
@@ -20,41 +23,46 @@ export component AppWindow inherits Window {
         spacing: 15px;
 
         Text {
-            text: "EPUB to Searchable PDF and Single HTML File";
+            text: "EPUB Transformer";
             font-size: 20px;
             horizontal-alignment: center;
         }
 
+        // Source and Destination UI (Same as before)
         VerticalBox {
             Text { text: "Source File:"; font-weight: 700; }
-            LineEdit { 
-                text: root.epub-path;
-                enabled: false;
-            }
-            Button {
-                text: "Choose EPUB";
-                clicked => { root.open-epub-clicked() }
-            }
+            LineEdit { text: root.epub-path; enabled: false; }
+            Button { text: "Choose EPUB"; clicked => { root.open-epub-clicked() } }
         }
 
+        // v1.1: Format Selection
         VerticalBox {
-            Text { text: "Save To:"; font-weight: 700; }
-            LineEdit { 
-                text: root.save-path;
-                enabled: false;
-            }
-            Button {
-                text: "Change Destination";
-                clicked => { root.select-save-clicked() }
+            Text { text: "Output Formats (Select at least one):"; font-weight: 700; }
+            HorizontalBox {
+                spacing: 20px;
+                CheckBox { 
+                    text: "Searchable PDF"; 
+                    checked: root.export-pdf;
+                    toggled => {
+                        if (!self.checked && !root.export-html) { self.checked = true; }
+                        root.export-pdf = self.checked;
+                    }
+                }
+                CheckBox { 
+                    text: "Single-File HTML"; 
+                    checked: root.export-html;
+                    toggled => {
+                        if (!self.checked && !root.export-pdf) { self.checked = true; }
+                        root.export-html = self.checked;
+                    }
+                }
             }
         }
 
-        if (root.is-busy) : ProgressIndicator {
-            progress: root.progress;
-        }
+        if (root.is-busy) : ProgressIndicator { progress: root.progress; }
 
         Button {
-            text: root.is-busy ? "Transforming..." : "Start Transformation";
+            text: root.is-busy ? "Processing..." : "Start Transformation";
             primary: true;
             enabled: !root.is-busy && root.epub-path != "No file selected";
             clicked => { root.transform_clicked() }
