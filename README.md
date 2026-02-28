@@ -23,8 +23,9 @@ Many virtual printers (like PDF24 or standard Print-to-PDF drivers) generate mas
 1. Run the application.
 2. Click **Choose EPUB** to select your book.
 3. (Optional) Change the destination path.
-4. Click **Start Transformation**.
-5. Find your optimized `.pdf` and `.html` files in the destination folder.
+4. Choose the desired output format(s)
+5. Click **Start Transformation**.
+6. Find your optimized `.pdf` and/or `.html` files in the destination folder.
 
 ## License
 Distributed under the **MIT License**. See `LICENSE` for more information.
