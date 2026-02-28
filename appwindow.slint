@@ -1,0 +1,63 @@
+import { Button, VerticalBox, ProgressIndicator, LineEdit } from "std-widgets.slint";
+
+export component AppWindow inherits Window {
+    title: "Rust EPUB and HTML Transformer";
+    preferred-width: 500px;
+    preferred-height: 300px;
+
+    // These allow Rust to talk to the GUI
+    in-out property <string> epub-path: "No file selected";
+    in-out property <string> save-path: "Default (Same as source)";
+    in-out property <float> progress: 0.0;
+    in-out property <bool> is-busy: false;
+
+    callback open-epub-clicked();
+    callback select-save-clicked();
+    callback transform_clicked();
+
+    VerticalBox {
+        padding: 20px;
+        spacing: 15px;
+
+        Text {
+            text: "EPUB to Searchable PDF and Single HTML File";
+            font-size: 20px;
+            horizontal-alignment: center;
+        }
+
+        VerticalBox {
+            Text { text: "Source File:"; font-weight: 700; }
+            LineEdit { 
+                text: root.epub-path;
+                enabled: false;
+            }
+            Button {
+                text: "Choose EPUB";
+                clicked => { root.open-epub-clicked() }
+            }
+        }
+
+        VerticalBox {
+            Text { text: "Save To:"; font-weight: 700; }
+            LineEdit { 
+                text: root.save-path;
+                enabled: false;
+            }
+            Button {
+                text: "Change Destination";
+                clicked => { root.select-save-clicked() }
+            }
+        }
+
+        if (root.is-busy) : ProgressIndicator {
+            progress: root.progress;
+        }
+
+        Button {
+            text: root.is-busy ? "Transforming..." : "Start Transformation";
+            primary: true;
+            enabled: !root.is-busy && root.epub-path != "No file selected";
+            clicked => { root.transform_clicked() }
+        }
+    }
+}

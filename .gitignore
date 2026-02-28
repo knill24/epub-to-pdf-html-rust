@@ -1,0 +1,14 @@
+# Rust build artifacts
+/target/
+
+# Generated files
+*.pdf
+*.html
+/epub_assets/
+
+# Source EPUBs
+*.epub
+
+# IDE specific
+.vscode/
+.idea/
