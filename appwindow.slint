@@ -1,16 +1,19 @@
 import { Button, VerticalBox, ProgressIndicator, LineEdit, CheckBox, HorizontalBox } from "std-widgets.slint";
 
 export component AppWindow inherits Window {
-    title: "Rust EPUB Transformer v1.1";
+    title: "Rust EPUB Transformer v1.2";
     preferred-width: 500px;
-    preferred-height: 350px;
+    preferred-height: 420px;
 
     in-out property <string> epub-path: "No file selected";
     in-out property <string> save-path: "Default (Same as source)";
     in-out property <float> progress: 0.0;
     in-out property <bool> is-busy: false;
     
-    // v1.1 Selection Properties
+    // v1.2 Status Feedback
+    in-out property <string> status-msg: "Ready";
+    in-out property <color> status-color: black;
+    
     in-out property <bool> export-pdf: true;
     in-out property <bool> export-html: true;
 
@@ -28,16 +31,23 @@ export component AppWindow inherits Window {
             horizontal-alignment: center;
         }
 
-        // Source and Destination UI (Same as before)
+        // Source File Selection
         VerticalBox {
             Text { text: "Source File:"; font-weight: 700; }
             LineEdit { text: root.epub-path; enabled: false; }
             Button { text: "Choose EPUB"; clicked => { root.open-epub-clicked() } }
         }
 
-        // v1.1: Format Selection
+        // Destination Folder (Back by popular demand!)
         VerticalBox {
-            Text { text: "Output Formats (Select at least one):"; font-weight: 700; }
+            Text { text: "Save Folder:"; font-weight: 700; }
+            LineEdit { text: root.save-path; enabled: false; }
+            Button { text: "Change Destination"; clicked => { root.select-save-clicked() } }
+        }
+
+        // Format Selection
+        VerticalBox {
+            Text { text: "Output Formats:"; font-weight: 700; }
             HorizontalBox {
                 spacing: 20px;
                 CheckBox { 
@@ -60,6 +70,14 @@ export component AppWindow inherits Window {
         }
 
         if (root.is-busy) : ProgressIndicator { progress: root.progress; }
+
+        // v1.2 Status Display
+        Text {
+            text: root.status-msg;
+            color: root.status-color;
+            horizontal-alignment: center;
+            font-weight: 700;
+        }
 
         Button {
             text: root.is-busy ? "Processing..." : "Start Transformation";

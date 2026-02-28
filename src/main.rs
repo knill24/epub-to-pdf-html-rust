@@ -12,7 +12,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let ui = AppWindow::new()?;
     let ui_handle = ui.as_weak();
 
-    // CALLBACK: Open EPUB File Dialog
+    // CALLBACK: Open EPUB
     ui.on_open_epub_clicked({
         let ui_handle = ui_handle.clone();
         move || {
@@ -21,67 +21,70 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .pick_file();
             if let Some(path) = file {
                 let ui = ui_handle.unwrap();
-                let path_str = path.to_string_lossy().to_string();
-                ui.set_epub_path(path_str.clone().into());
+                ui.set_epub_path(path.to_string_lossy().to_string().into());
+                ui.set_status_msg("File selected. Ready to convert.".into());
+                ui.set_status_color(slint::Color::from_rgb_u8(0, 0, 0)); // Black
                 
-                // Default save path to the same location with .pdf extension
-                let mut save_p = path.clone();
-                save_p.set_extension("pdf");
-                ui.set_save_path(save_p.to_string_lossy().to_string().into());
+                if let Some(parent) = path.parent() {
+                    ui.set_save_path(parent.to_string_lossy().to_string().into());
+                }
             }
         }
     });
 
-    // CALLBACK: Select Destination Folder/File
+    // CALLBACK: Select Destination Folder
     ui.on_select_save_clicked({
         let ui_handle = ui_handle.clone();
         move || {
-            let file = rfd::FileDialog::new()
-                .add_filter("PDF Document", &["pdf"])
-                .save_file();
-            if let Some(path) = file {
-                ui_handle.unwrap().set_save_path(path.to_string_lossy().to_string().into());
+            if let Some(folder) = rfd::FileDialog::new().pick_folder() {
+                ui_handle.unwrap().set_save_path(folder.to_string_lossy().to_string().into());
             }
         }
     });
 
-    // CALLBACK: Start Transformation
+    // CALLBACK: Transform
     ui.on_transform_clicked({
         let ui_handle = ui_handle.clone();
         move || {
             let ui = ui_handle.unwrap();
             ui.set_is_busy(true);
             ui.set_progress(0.0);
+            ui.set_status_msg("Processing... please wait.".into());
+            ui.set_status_color(slint::Color::from_rgb_u8(0, 0, 255)); // Blue
 
             let epub_path = ui.get_epub_path().to_string();
-            let pdf_path = ui.get_save_path().to_string();
-            let html_path = epub_path.replace(".epub", ".html");
-            
-            // v1.1 User Preferences
+            let dest_dir = ui.get_save_path().to_string();
             let do_pdf = ui.get_export_pdf();
             let do_html = ui.get_export_html();
 
-            // Clone handle for the background thread
+            // Prepare output filenames based on EPUB name
+            let file_stem = Path::new(&epub_path).file_stem().unwrap_or(OsStr::new("output")).to_string_lossy();
+            let pdf_path = Path::new(&dest_dir).join(format!("{}.pdf", file_stem)).to_string_lossy().to_string();
+            let html_path = Path::new(&dest_dir).join(format!("{}.html", file_stem)).to_string_lossy().to_string();
+
             let thread_handle = ui_handle.clone();
             thread::spawn(move || {
-                if let Err(e) = perform_conversion(
-                    epub_path, 
-                    pdf_path, 
-                    html_path, 
-                    do_pdf, 
-                    do_html, 
-                    thread_handle.clone()
-                ) {
-                    eprintln!("Conversion error: {}", e);
-                }
-                
-                // Finalize UI on the main thread
-                let _ = slint::invoke_from_event_loop(move || {
-                    if let Some(ui) = thread_handle.upgrade() {
-                        ui.set_is_busy(false);
-                        ui.set_progress(1.0);
+                match perform_conversion(epub_path, pdf_path, html_path, do_pdf, do_html, thread_handle.clone()) {
+                    Ok(_) => {
+                        let _ = slint::invoke_from_event_loop(move || {
+                            if let Some(ui) = thread_handle.upgrade() {
+                                ui.set_status_msg("Success! Conversion Complete.".into());
+                                ui.set_status_color(slint::Color::from_rgb_u8(0, 128, 0)); // Green
+                                ui.set_is_busy(false);
+                                ui.set_progress(1.0);
+                            }
+                        });
                     }
-                });
+                    Err(e) => {
+                        let _ = slint::invoke_from_event_loop(move || {
+                            if let Some(ui) = thread_handle.upgrade() {
+                                ui.set_status_msg(format!("Error: {}", e).into());
+                                ui.set_status_color(slint::Color::from_rgb_u8(200, 0, 0)); // Red
+                                ui.set_is_busy(false);
+                            }
+                        });
+                    }
+                }
             });
         }
     });
