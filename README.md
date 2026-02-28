@@ -2,6 +2,8 @@
 
 A high-performance Rust tool designed to transform large EPUB files (500+ pages) into lightweight, searchable PDFs and single-file HTML documents.
 
+![App Screenshot](screenshot.png)
+
 ## The Problem
 Many virtual printers (like PDF24 or standard Print-to-PDF drivers) generate massive temporary spool files—sometimes exceeding 30GB for a single book—due to inefficient rasterization. This tool bypasses the Windows Print Spooler entirely.
 
